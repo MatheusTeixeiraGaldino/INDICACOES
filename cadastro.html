@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Indicações</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <div class="logo-icon">🏆</div>
+          <div class="logo-text">Sistema de<br>Indicações</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="./dashboard.html" class="nav-item">📊 Dashboard</a>
+        <a href="./indicacoes.html" class="nav-item">🎯 Indicações</a>
+        <a href="./cadastro.html" class="nav-item active">➕ Novo Cadastro</a>
+        <a href="./pagamentos.html" class="nav-item">💰 Pagamentos</a>
+        <a href="./relatorios.html" class="nav-item">📈 Relatórios</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn-logout" id="logout-btn">Sair</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Cadastro de Indicação</h1>
+        <a href="./indicacoes.html" class="btn btn-secondary">← Voltar</a>
+      </div>
+
+      <div class="form-container">
+        <form id="form-indicacao">
+          <div class="form-section">
+            <h2>Dados do Indicado</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nome do Indicado *</label>
+                <input type="text" id="nomeIndicado" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label>Matrícula Indicado</label>
+                <input type="text" id="matriculaIndicado" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Setor *</label>
+                <input type="text" id="setorIndicado" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label>Data de Admissão *</label>
+                <input type="date" id="dataAdmissao" class="form-control" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h2>Dados do Indicador</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nome do Indicador *</label>
+                <input type="text" id="nomeIndicador" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label>Matrícula Indicador</label>
+                <input type="text" id="matriculaIndicador" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Setor *</label>
+                <input type="text" id="setorIndicador" class="form-control" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h2>Dados do Contrato</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Tipo de Contrato *</label>
+                <select id="tipoContrato" class="form-control" required>
+                  <option value="">Selecione...</option>
+                  <option value="indeterminado">Indeterminado</option>
+                  <option value="determinado">Determinado</option>
+                  <option value="temporario">Temporário</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Data Término (se aplicável)</label>
+                <input type="date" id="dataTerminoContrato" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Valor do Prêmio (R$)</label>
+                <input type="number" id="valorPremio" class="form-control" value="500" step="0.01">
+              </div>
+            </div>
+          </div>
+
+          <div id="alert-area"></div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">Salvar Indicação</button>
+            <a href="./indicacoes.html" class="btn btn-secondary btn-lg">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { requireAuth, logout, getCurrentUser } from '../auth.js';
+    import { criarIndicacao, atualizarIndicacao, getIndicacao, toInputDate } from '../indicacoes.js';
+
+    const user = requireAuth();
+    const form = document.getElementById('form-indicacao');
+    const alertArea = document.getElementById('alert-area');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    const params = new URLSearchParams(window.location.search);
+    const indicacaoId = params.get('id');
+
+    async function carregarIndicacao() {
+      if (!indicacaoId) return;
+      
+      try {
+        const ind = await getIndicacao(indicacaoId);
+        if (!ind) throw new Error('Indicação não encontrada');
+
+        document.getElementById('nomeIndicado').value = ind.nomeIndicado || '';
+        document.getElementById('matriculaIndicado').value = ind.matriculaIndicado || '';
+        document.getElementById('setorIndicado').value = ind.setorIndicado || '';
+        document.getElementById('dataAdmissao').value = toInputDate(ind.dataAdmissao) || '';
+        document.getElementById('nomeIndicador').value = ind.nomeIndicador || '';
+        document.getElementById('matriculaIndicador').value = ind.matriculaIndicador || '';
+        document.getElementById('setorIndicador').value = ind.setorIndicador || '';
+        document.getElementById('tipoContrato').value = ind.tipoContrato || '';
+        document.getElementById('dataTerminoContrato').value = toInputDate(ind.dataTerminoContrato) || '';
+        document.getElementById('valorPremio').value = ind.valorPremio || 500;
+      } catch (e) {
+        alertArea.innerHTML = `<div class="alert alert-error">Erro ao carregar: ${e.message}</div>`;
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertArea.innerHTML = '';
+
+      const dados = {
+        nomeIndicado: document.getElementById('nomeIndicado').value,
+        matriculaIndicado: document.getElementById('matriculaIndicado').value,
+        setorIndicado: document.getElementById('setorIndicado').value,
+        dataAdmissao: document.getElementById('dataAdmissao').value,
+        nomeIndicador: document.getElementById('nomeIndicador').value,
+        matriculaIndicador: document.getElementById('matriculaIndicador').value,
+        setorIndicador: document.getElementById('setorIndicador').value,
+        tipoContrato: document.getElementById('tipoContrato').value,
+        dataTerminoContrato: document.getElementById('dataTerminoContrato').value,
+        valorPremio: document.getElementById('valorPremio').value
+      };
+
+      try {
+        if (indicacaoId) {
+          await atualizarIndicacao(indicacaoId, dados, user.uid);
+          alertArea.innerHTML = '<div class="alert alert-success">Indicação atualizada com sucesso!</div>';
+        } else {
+          await criarIndicacao(dados, user.uid);
+          alertArea.innerHTML = '<div class="alert alert-success">Indicação criada com sucesso!</div>';
+        }
+        
+        setTimeout(() => window.location.href = './indicacoes.html', 1500);
+      } catch (e) {
+        alertArea.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    });
+
+    logoutBtn.addEventListener('click', logout);
+
+    carregarIndicacao();
+  </script>
+</body>
+</html>

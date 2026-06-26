@@ -1,0 +1,13 @@
+{
+  "name": "indicacoes-firebase",
+  "version": "1.0.0",
+  "description": "Sistema de Indicações com Firebase e Vercel",
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 3000",
+    "build": "echo 'Build complete'"
+  },
+  "keywords": ["firebase", "indicacoes"],
+  "author": "",
+  "license": "MIT"
+}

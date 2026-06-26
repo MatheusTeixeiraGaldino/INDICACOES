@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <div class="logo-icon">🏆</div>
+          <div class="logo-text">Sistema de<br>Indicações</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="./dashboard.html" class="nav-item active">📊 Dashboard</a>
+        <a href="./indicacoes.html" class="nav-item">🎯 Indicações</a>
+        <a href="./cadastro.html" class="nav-item">➕ Novo Cadastro</a>
+        <a href="./pagamentos.html" class="nav-item">💰 Pagamentos</a>
+        <a href="./relatorios.html" class="nav-item">📈 Relatórios</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn-logout" id="logout-btn">Sair</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="total-indicacoes">0</div>
+          <div class="stat-label">Indicações Ativas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="aguardando-pagamento">0</div>
+          <div class="stat-label">Aguardando Pagamento</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="ja-pagas">0</div>
+          <div class="stat-label">Já Pagas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="total-gasto">R$ 0,00</div>
+          <div class="stat-label">Valor Total Investido</div>
+        </div>
+      </div>
+
+      <!-- Últimas Indicações -->
+      <div class="card" style="margin-top: 30px;">
+        <div class="card-header">
+          <h2>Últimas Indicações</h2>
+          <a href="./indicacoes.html" class="btn btn-sm btn-secondary">Ver todas</a>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Indicado</th>
+                <th>Indicador</th>
+                <th>Status</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody id="ultimas-indicacoes">
+              <tr>
+                <td colspan="4" style="text-align: center; padding: 20px;">Carregando...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { requireAuth, logout } from '../auth.js';
+    import { listarIndicacoes, STATUS_LABELS, STATUS_COLORS, formatDate } from '../indicacoes.js';
+
+    const user = requireAuth();
+    const logoutBtn = document.getElementById('logout-btn');
+    const totalIndicacoes = document.getElementById('total-indicacoes');
+    const aguardandoPagamento = document.getElementById('aguardando-pagamento');
+    const jaPagas = document.getElementById('ja-pagas');
+    const totalGasto = document.getElementById('total-gasto');
+    const ultimasIndicacoes = document.getElementById('ultimas-indicacoes');
+
+    async function carregarDados() {
+      try {
+        const indicacoes = await listarIndicacoes();
+        
+        let ativas = 0, aguardando = 0, pagas = 0, gasto = 0;
+
+        indicacoes.forEach(ind => {
+          gasto += ind.valorPremio || 0;
+          if (ind.status === 'pago') {
+            pagas++;
+          } else if (ind.status === 'aguardando_pagamento') {
+            aguardando++;
+          }
+          if (ind.status !== 'cancelado' && ind.status !== 'colaborador_desligado') {
+            ativas++;
+          }
+        });
+
+        totalIndicacoes.textContent = ativas;
+        aguardandoPagamento.textContent = aguardando;
+        jaPagas.textContent = pagas;
+        totalGasto.textContent = `R$ ${gasto.toFixed(2)}`;
+
+        const ultimas = indicacoes.slice(0, 5);
+        if (ultimas.length === 0) {
+          ultimasIndicacoes.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Nenhuma indicação criada</td></tr>';
+          return;
+        }
+
+        ultimasIndicacoes.innerHTML = ultimas.map(ind => `
+          <tr>
+            <td>${ind.nomeIndicado}</td>
+            <td>${ind.nomeIndicador}</td>
+            <td>
+              <span class="badge" style="background-color: ${STATUS_COLORS[ind.status]}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                ${STATUS_LABELS[ind.status] || ind.status}
+              </span>
+            </td>
+            <td>R$ ${(ind.valorPremio || 0).toFixed(2)}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error('Erro:', e);
+        ultimasIndicacoes.innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">Erro ao carregar dados</td></tr>`;
+      }
+    }
+
+    logoutBtn.addEventListener('click', logout);
+    carregarDados();
+  </script>
+</body>
+</html>
